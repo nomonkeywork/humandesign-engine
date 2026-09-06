@@ -1,6 +1,6 @@
 # Human Design Engine
 
-Focused Human Design calculation extracted from NatalEngine. This repository contains only the Human Design calculator, its astronomical dependencies, timezone helpers, and an MCP server for AI assistants.
+Focused Human Design calculation. This repository contains only the Human Design calculator, its astronomical dependencies, timezone helpers, and an MCP server for AI assistants.
 
 ## Use as a library
 
