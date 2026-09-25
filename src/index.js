@@ -8,8 +8,8 @@ export {
   DREAM_GATES,
   DREAM_REALMS,
   calculateDreamRave,
-  dreamDesignMoment,
-  dreamRaveView,
+  dreamMoment,
+  dreamRaveState,
   dreamRealmOf,
   isDreamGate,
 } from './dream-rave.js';

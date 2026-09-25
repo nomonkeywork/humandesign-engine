@@ -5,7 +5,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { calculateDreamRave, calculateHumanDesign, resolveUtcOffset, searchPlaces } from '../index.js';
 
 const server = new Server(
-  { name: 'humandesign-engine', version: '0.2.0' },
+  { name: 'humandesign-engine', version: '0.3.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -29,7 +29,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'calculate_dream_rave',
-      description: 'Calculate the DreamRave (chart of the sleeping body): 15 gates in three realms (Light Field, Demon Realm, Earth Plane), five centers, Design at the moment the Moon stood 88° before its birth position. Returns the activations, defined channels and centers, and per-view results.',
+      description: 'Calculate the DreamRave (chart of the sleeping body): 15 gates in three realms (Light Field, Demon Realm, Earth Plane), five centers, one set of activations read at the moment the Moon stood 88° before its birth position. Returns the activations, defined channels and centers.',
       inputSchema: calculateSchema,
     },
     {

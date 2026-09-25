@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BODIES, DREAM_CENTERS, DREAM_CHANNELS, DREAM_GATES, DREAM_REALMS, GATE_CENTER,
-  calculateBirthPositions, calculateDreamRave, dreamDesignMoment, dreamRaveView, isDreamGate,
+  calculateBirthPositions, calculateDreamRave, calculateHumanDesign, dreamMoment, dreamRaveState, isDreamGate,
 } from '../src/index.js';
 
 const CHANNEL_TABLE = [
@@ -37,17 +37,36 @@ test('definition: 15 gates in three realms of five, in five centers, six channel
 
 test('reference chart 25.08.1971 20:37 Hannover (UTC+1): matches MyBodyGraph', () => {
   const r = calculateDreamRave('1971-08-25', 20 + 37 / 60, 1);
-  assert.equal(r.designDateTime, '1971-08-18T12:47');
-  assert.deepEqual(r.activations.map((a) => [a.body, a.side, a.gate, a.line, a.realm]), [['saturn', 'design', 20, 6, 'light']]);
+  assert.equal(r.dateTime, '1971-08-18T12:47');
+  assert.deepEqual(r.activations.map((a) => [a.body, a.gate, a.line, a.realm]), [['saturn', 20, 6, 'light']]);
   assert.deepEqual(r.gates, [20]);
   assert.deepEqual(r.channels, []);
   assert.deepEqual(r.definedCenters, []);
   assert.equal(r.type, 'Reflector');
-  assert.deepEqual(Object.keys(r.views.personality.gates), []);
-  assert.deepEqual(r.views.design.gates, { 20: 'design' });
+  assert.equal('views' in r, false, 'one calculation, no Personality/Design views');
+  assert.ok(r.activations.every((a) => !('side' in a)));
 });
 
-test('the Design moment: the Moon is 88° (±0.02°) behind its birth position, days not months before', () => {
+test('the activations are exactly the bodies standing on a DreamRave gate at the Moon −88° moment — birth positions do not count', () => {
+  const next = rnd(2024);
+  let birthOnlyHits = 0;
+  for (let i = 0; i < 150; i++) {
+    const t = Date.UTC(1930, 0, 1) + next() * (Date.UTC(2020, 11, 31) - Date.UTC(1930, 0, 1));
+    const iso = new Date(t).toISOString();
+    const date = iso.slice(0, 10), hour = Number(iso.slice(11, 13)) + Number(iso.slice(14, 16)) / 60;
+    const r = calculateDreamRave(date, hour, 0);
+    const birthMs = Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10), 0, Math.round(hour * 60));
+    const m = new Date(dreamMoment(birthMs));
+    const at = calculateHumanDesign(m.toISOString().slice(0, 10), m.getUTCHours() + (m.getUTCMinutes() + 0.01) / 60, 0).gates.personality;
+    const expected = BODIES.filter((b) => isDreamGate(at[b].gate)).map((b) => [b, at[b].gate, at[b].line]);
+    assert.deepEqual(r.activations.map((a) => [a.body, a.gate, a.line]), expected, iso);
+    const birth = calculateHumanDesign(date, hour, 0).gates.personality;
+    for (const b of BODIES) if (isDreamGate(birth[b].gate) && !expected.some(([x, g]) => x === b && g === birth[b].gate)) birthOnlyHits++;
+  }
+  assert.ok(birthOnlyHits > 0, 'the sample contained birth-moment positions that must not count');
+});
+
+test('the DreamRave moment: the Moon is 88° (±0.02°) behind its birth position, days not months before', () => {
   const moon = (ms) => {
     const d = new Date(ms);
     return calculateBirthPositions(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours() + d.getUTCMinutes() / 60, 0).moon.longitude;
@@ -55,7 +74,7 @@ test('the Design moment: the Moon is 88° (±0.02°) behind its birth position, 
   const next = rnd(99);
   for (let i = 0; i < 60; i++) {
     const birth = Math.floor((Date.UTC(1900, 0, 1) + next() * (Date.UTC(2024, 11, 31) - Date.UTC(1900, 0, 1))) / 60000) * 60000;
-    const design = dreamDesignMoment(birth);
+    const design = dreamMoment(birth);
     const arc = (moon(birth) - moon(design) + 360) % 360;
     assert.ok(Math.abs(arc - 88) < 0.02, `${new Date(birth).toISOString()}: arc ${arc}`);
     const days = (birth - design) / 86400000;
@@ -63,7 +82,7 @@ test('the Design moment: the Moon is 88° (±0.02°) behind its birth position, 
   }
 });
 
-test('invariants over 200 random charts, every view', () => {
+test('invariants over 200 random charts', () => {
   const next = rnd(321);
   const table = new Set(CHANNEL_TABLE.map((c) => c.join('-')));
   for (let i = 0; i < 200; i++) {
@@ -76,23 +95,17 @@ test('invariants over 200 random charts, every view', () => {
       assert.equal(a.center, GATE_CENTER[a.gate]);
       assert.ok(DREAM_REALMS[a.realm].gates.includes(a.gate));
     }
-    for (const view of ['both', 'personality', 'design']) {
-      const v = r.views[view];
-      assert.deepEqual(v, dreamRaveView(r, view));
-      for (const [g, side] of Object.entries(v.gates)) {
-        assert.ok(isDreamGate(+g));
-        if (view !== 'both') assert.equal(side, view);
-        assert.ok(r.views.both.gates[g]);
-      }
-      for (const c of v.channels) {
-        assert.ok(table.has(c.gates.join('-')));
-        assert.ok(c.gates.every((g) => v.gates[g]), 'a channel needs both gates');
-      }
-      const onChannels = new Set(v.channels.flatMap((c) => c.centers));
-      assert.deepEqual([...v.definedCenters].sort(), [...onChannels].sort());
-      for (const k of v.definedCenters) assert.ok(DREAM_CENTERS.includes(k));
+    const state = dreamRaveState(r.activations);
+    assert.deepEqual(r.gates, state.gates);
+    assert.deepEqual(r.channels, state.channels);
+    assert.deepEqual(r.definedCenters, state.definedCenters);
+    for (const c of r.channels) {
+      assert.ok(table.has(c.gates.join('-')));
+      assert.ok(c.gates.every((g) => r.gates.includes(g)), 'a channel needs both gates');
     }
-    assert.deepEqual(r.gates, Object.keys(r.views.both.gates).map(Number).sort((a, b) => a - b));
+    const onChannels = new Set(r.channels.flatMap((c) => c.centers));
+    assert.deepEqual([...r.definedCenters].sort(), [...onChannels].sort());
+    for (const k of r.definedCenters) assert.ok(DREAM_CENTERS.includes(k));
     assert.equal(r.type, r.definedCenters.length ? null : 'Reflector');
   }
 });
