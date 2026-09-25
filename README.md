@@ -35,19 +35,19 @@ import { calculateDreamRave, resolveUtcOffset } from 'humandesign-engine';
 
 const offset = resolveUtcOffset('1971-08-25', '20:37', 'Europe/Berlin');
 const dream = calculateDreamRave('1971-08-25', 20 + 37 / 60, offset);
-// dream.designDateTime  '1971-08-18T12:47' (UTC)
-// dream.activations     [{ body: 'saturn', side: 'design', gate: 20, line: 6, realm: 'light', … }]
+// dream.dateTime     '1971-08-18T12:47' (UTC) — the moment the Moon stood 88° before its birth position
+// dream.activations  [{ body: 'saturn', gate: 20, line: 6, realm: 'light', … }]  — one set, no Personality/Design
 // dream.gates / dream.channels / dream.definedCenters / dream.type ('Reflector' when no center is defined)
-// dream.views           { both, personality, design }
 ```
 
-The DreamRave is the chart of the sleeping body and has its own structure — it is not the standard chart filtered:
+The DreamRave is the chart of the sleeping body. It has its own structure — it is not the standard chart filtered, and it
+has no Personality/Design split:
 
+- **One calculation:** the moment the **Moon** stood 88° of arc before its birth position (about 7 days before birth, not
+  the Sun's 88°), rounded down to the whole UTC minute; the positions of the 13 bodies at that moment are the activations;
 - only **15 gates** exist, in three realms — Light Field 62 20 57 8 1, Demon Realm 19 53 42 38 28, Earth Plane
-  12 15 5 50 27 — in five centers: Throat, G, Sacral, Spleen, Root. Head, Ajna, Heart and Solar Plexus are absent;
-- **Personality** is the birth moment; **Design** is the moment the **Moon** stood 88° before its birth position
-  (about 7 days before birth, not the Sun's 88°), rounded down to the whole UTC minute;
-- the same 13 bodies activate gates; only activations on the 15 gates count;
+  12 15 5 50 27 — in five centers: Throat, G, Sacral, Spleen, Root. Head, Ajna, Heart and Solar Plexus are absent; only
+  activations on the 15 gates count;
 - only six channels can exist (1-8, 5-15, 20-57, 27-50, 28-38, 42-53); a center is defined iff it lies on one.
 
 Checked against a MyBodyGraph "Dream Rave Overview" (test in `tests/dream-rave.test.js`). Not asserted, because

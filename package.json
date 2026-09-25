@@ -1,6 +1,6 @@
 {
   "name": "humandesign-engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Focused Human Design chart calculator with Dream Rave, bodygraph helpers and an MCP server.",
   "type": "module",
   "main": "src/index.js",
