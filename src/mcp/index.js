@@ -2,10 +2,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { calculateHumanDesign, resolveUtcOffset, searchPlaces } from '../index.js';
+import { calculateDreamRave, calculateHumanDesign, resolveUtcOffset, searchPlaces } from '../index.js';
 
 const server = new Server(
-  { name: 'humandesign-engine', version: '0.1.0' },
+  { name: 'humandesign-engine', version: '0.2.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -28,6 +28,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: calculateSchema,
     },
     {
+      name: 'calculate_dream_rave',
+      description: 'Calculate the DreamRave (chart of the sleeping body): 15 gates in three realms (Light Field, Demon Realm, Earth Plane), five centers, Design at the moment the Moon stood 88° before its birth position. Returns the activations, defined channels and centers, and per-view results.',
+      inputSchema: calculateSchema,
+    },
+    {
       name: 'search_birth_places',
       description: 'Find birth places and IANA timezones using keyless Open-Meteo geocoding.',
       inputSchema: {
@@ -46,15 +51,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const places = await searchPlaces(String(args.query || ''));
       return { content: [{ type: 'text', text: JSON.stringify(places) }] };
     }
-    if (request.params.name === 'calculate_human_design') {
+    if (request.params.name === 'calculate_human_design' || request.params.name === 'calculate_dream_rave') {
       const date = String(args.birth_date || '');
       const time = String(args.birth_time || '');
       const hour = Number(time.slice(0, 2)) + Number(time.slice(3, 5)) / 60;
       const timezone = args.timezone_name
         ? resolveUtcOffset(date, time, String(args.timezone_name))
         : Number(args.timezone);
-      const chart = calculateHumanDesign(date, hour, timezone);
-      return { content: [{ type: 'text', text: JSON.stringify(chart) }] };
+      const result =
+        request.params.name === 'calculate_dream_rave'
+          ? calculateDreamRave(date, hour, timezone)
+          : calculateHumanDesign(date, hour, timezone);
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     }
     throw new Error(`Unknown tool: ${request.params.name}`);
   } catch (error) {
